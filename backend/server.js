@@ -372,7 +372,7 @@ app.post('/lint-code', async (req, res) => {
         let gptFeedback = "";
         if (hasError) {
             try {
-                const response = await fetch("http://localhost:5005/gpt-feedback", {
+                const response = await fetch("/gpt-feedback", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ messages: allRawFeedback, lang: 'HTML/CSS/JS' })
