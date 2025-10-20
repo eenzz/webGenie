@@ -215,7 +215,7 @@ document.addEventListener("DOMContentLoaded", () => {
         //     const js = editors.js.getValue();
         
         //     // 서버로 코드 검사 요청
-        //     const response = await fetch("http://localhost:5005/lint-code", {
+        //     const response = await fetch("/lint-code", {
         //         method: "POST",
         //         headers: { "Content-Type": "application/json" },
         //         body: JSON.stringify({ html, css, js })
@@ -240,7 +240,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // `.trim();
         
         //     // 🌟 GPT 번역 요청
-        //     const gptResponse = await fetch("http://localhost:5005/gpt-feedback", {
+        //     const gptResponse = await fetch("/gpt-feedback", {
         //         method: "POST",
         //         headers: { "Content-Type": "application/json" },
         //         body: JSON.stringify({
@@ -318,7 +318,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         
             // 서버에 lint + gpt 피드백 요청
-            const response = await fetch("http://localhost:5005/lint-code", {
+            const response = await fetch("/lint-code", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ html, css, js, runtimeError })
@@ -384,7 +384,7 @@ document.addEventListener("DOMContentLoaded", () => {
         //         }
         
         //         // 검사 요청 보내기
-        //         const response = await fetch("http://localhost:5005/lint-code", {
+        //         const response = await fetch("/lint-code", {
             
         //             method: "POST",
         //             headers: { "Content-Type": "application/json" },
@@ -675,7 +675,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const htmlCode = editors.html.getValue();
             const cssCode = editors.css.getValue();
             const jsCode = editors.js.getValue();
-            const res = await fetch("http://localhost:5005/submit", {
+            const res = await fetch("submit", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
