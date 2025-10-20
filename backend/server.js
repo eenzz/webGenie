@@ -34,7 +34,8 @@ app.use(bodyParser.json());
 
 
 // 정적 파일 제공
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "..", "public")));
+
 
 // DB 연결 및 테이블 생성
 sequelize.sync({ alter: true }).then(() => {
@@ -51,9 +52,8 @@ sequelize.sync({ alter: true }).then(() => {
 //     res.send('서버 연결 성공!');
 // });
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "index.html"));
+    res.sendFile(path.join(__dirname, "..", "public", "index.html"));
   });
-
 
 // ✅ 회원가입
 app.post('/signup', async (req, res) => {
