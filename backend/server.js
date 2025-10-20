@@ -20,7 +20,7 @@ dotenv.config();
 const app = express();
 // const PORT = 5005; // 포트 5005로 고정!
 
-const SERVER_URL = "https://webgenie-atnn.onrender.com/";
+const SERVER_URL = "https://webgenie-atnn.onrender.com";
 
 const PORT = process.env.PORT || 5005; // 환경 변수 PORT 사용, 없으면 5005
 app.listen(PORT, () => {
