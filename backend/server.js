@@ -345,6 +345,7 @@ app.post('/lint/css', async (req, res) => {
         return res.status(500).json({ message: "Stylelint 실행 오류" });
     }
 });
+const SERVER_URL = process.env.SERVER_URL;
 
 app.post('/lint-code', async (req, res) => {
     const { html, css, js, runtimeError } = req.body;
@@ -372,7 +373,9 @@ app.post('/lint-code', async (req, res) => {
         let gptFeedback = "";
         if (hasError) {
             try {
-                const response = await fetch("/gpt-feedback", {
+
+                const response = await fetch(`${SERVER_URL}/gpt-feedback`, {
+                // const response = await fetch("/gpt-feedback", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ messages: allRawFeedback, lang: 'HTML/CSS/JS' })
