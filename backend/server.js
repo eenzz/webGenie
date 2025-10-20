@@ -31,7 +31,10 @@ app.listen(PORT, () => {
 app.use(cors());
 app.use(bodyParser.json());
 // app.use(express.static("public"));
-
+app.use(cors({
+    origin: "https://webgenie-atnn.onrender.com/", 
+    methods: ["GET", "POST"],
+  }));
 
 // 정적 파일 제공
 app.use(express.static(path.join(__dirname, "..", "public")));

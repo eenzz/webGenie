@@ -16,7 +16,7 @@ let lastGeneratedFeedback = "";
 
 async function explainLinterMessages(messages, lang) {
     try {
-        const response = await fetch('http://localhost:5005/gpt-feedback', {
+        const response = await fetch('/gpt-feedback', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ messages, lang })
@@ -56,7 +56,7 @@ function lintHTML(html) {
 }
 async function lintCSS(css) {
     try {
-        const res = await fetch('http://localhost:5005/lint/css', {
+        const res = await fetch('/lint/css', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ cssCode: css })
@@ -110,7 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             try {
-                const response = await fetch('http://localhost:5005/login', {
+                const response = await fetch('/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -859,7 +859,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const teacherId = btn.dataset.id;
                     if (!confirm("이 담당 교사를 삭제하시겠습니까?")) return;
 
-                    const res = await fetch('http://localhost:5005/remove-teacher', {
+                    const res = await fetch('/remove-teacher', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -876,7 +876,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         async function removeAssignedTeacher() {
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            const res = await fetch('http://localhost:5005/remove-teacher', {
+            const res = await fetch('/remove-teacher', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ student_id: currentUser.id })
@@ -893,7 +893,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!confirm("담당 교사를 삭제하시겠습니까?")) return;
 
             try {
-                const res = await fetch('http://localhost:5005/remove-teacher', {
+                const res = await fetch('/remove-teacher', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ student_id: currentUser.id })
@@ -1019,7 +1019,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 try {
-                    const res = await fetch('http://localhost:5005/assign-teacher-from-mypage', {
+                    const res = await fetch('/assign-teacher-from-mypage', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -1330,7 +1330,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            const response = await fetch('http://localhost:5005/signup', {
+            const response = await fetch('/signup', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
