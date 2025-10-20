@@ -18,12 +18,23 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config();
 const app = express();
-const PORT = 5005; // 포트 5005로 고정!
+// const PORT = 5005; // 포트 5005로 고정!
+
+
+const PORT = process.env.PORT || 5005; // 환경 변수 PORT 사용, 없으면 5005
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+
 
 // 미들웨어 설정
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static("public"));
+// app.use(express.static("public"));
+
+
+// 정적 파일 제공
+app.use(express.static(path.join(__dirname, "public")));
 
 // DB 연결 및 테이블 생성
 sequelize.sync({ alter: true }).then(() => {
@@ -36,9 +47,12 @@ sequelize.sync({ alter: true }).then(() => {
 });
 
 // 기본 라우트
-app.get('/', (req, res) => {
-    res.send('서버 연결 성공!');
-});
+// app.get('/', (req, res) => {
+//     res.send('서버 연결 성공!');
+// });
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+  });
 
 
 // ✅ 회원가입
