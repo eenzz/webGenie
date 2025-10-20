@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Web IDE</title>
+
+    <!-- JSZip / FileSaver -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <!-- Linters -->
+    <script src="https://cdn.jsdelivr.net/npm/htmlhint@latest/dist/htmlhint.min.js"></script>
+    <script src="https://unpkg.com/htmlhint@latest/dist/htmlhint.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jshint/2.13.4/jshint.min.js"></script>
+
+    <!-- CodeMirror Core -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/tomorrow-night-bright.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+
+    <!-- 📌 순서 중요: 모드 로딩 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+
+    <link rel="stylesheet" href="style2.css">
+
+</head>
+
+<body>
+
+    <!-- 로그인 화면 -->
+    <div id="loginScreen" class="screen">
+        <div class="login-container">
+            <h1>로그인</h1>
+            <input type="text" id="username" placeholder="아이디 입력">
+            <input type="password" id="password" placeholder="비밀번호 입력">
+            <button id="loginBtn">로그인</button>
+            <button id="goToSignupBtn">회원가입</button>
+        </div>
+    </div>
+    <!-- 회원가입 화면 -->
+    <div id="signupScreen" style="display:none;">
+        <div class="login-container">
+            <h1>회원가입</h1>
+
+            <input type="text" id="signupUsername" placeholder="아이디 *">
+            <input type="password" id="signupPassword" placeholder="비밀번호 *">
+            <input type="password" id="signupPasswordConfirm" placeholder="비밀번호 확인 *">
+            <input type="text" id="signupName" placeholder="이름 *">
+            <input type="text" id="signupStudentId" placeholder="학번 (선택)">
+            <input type="text" id="signupPhone" placeholder="전화번호 (선택)">
+
+            <div class="role-select">
+                <label><input type="radio" name="role" value="student" checked> 학생</label>
+                <label><input type="radio" name="role" value="teacher"> 교사</label>
+            </div>
+
+            <button id="signupSubmitBtn">회원가입 완료</button>
+            <button id="goToLoginBtn">로그인 화면으로</button>
+        </div>
+    </div>
+
+    <!-- ✨ Web IDE 화면 -->
+    <div id="mainScreen" style="display:none;">
+        <header class="header">
+            <div class="logo">Web IDE with AI feedback</div>
+            <nav class="nav">
+                <span id="uploadFileName" style="margin-left:10px; font-size:0.9rem; color:white;"></span>
+
+                <button id="newBtn">New</button>
+                <input type="file" id="uploadZip" accept=".zip" style="display:none;">
+                <button id="uploadBtn">Upload</button>
+                <button id="saveBtn">Save</button>
+                <button id="submitBtn">Submit</button>
+                <button id="runBtn">Run</button>
+            </nav>
+        </header>
+
+        <main class="main">
+            <div class="editor-feedback-container">
+                <section class="editor-section">
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" data-lang="html">HTML <span class="change-indicator"
+                                id="htmlChanged"></span></button>
+                        <button class="tab-btn" data-lang="css">CSS <span class="change-indicator"
+                                id="cssChanged"></span></button>
+                        <button class="tab-btn" data-lang="js">JS <span class="change-indicator"
+                                id="jsChanged"></span></button>
+                    </div>
+                    <div class="editor-container">
+                        <textarea id="htmlEditor"></textarea>
+                        <textarea id="cssEditor"></textarea>
+                        <textarea id="jsEditor"></textarea>
+                    </div>
+                </section>
+
+                <div class="output-feedback-wrapper-ide">
+                    <div class="output-container">
+                        <h2 class="section-title">Output</h2>
+                        <div class="fake-browser">
+                            <div class="browser-header">
+                                <div class="browser-buttons">
+                                    <span class="circle red"></span>
+                                    <span class="circle yellow"></span>
+                                    <span class="circle green"></span>
+                                </div>
+                                <div class="browser-title" id="browserTitle">Untitled</div>
+                            </div>
+                            <div class="output-frame-wrapper">
+                                <iframe id="outputFrame"></iframe>
+                            </div>
+                        </div>
+                    </div>
+
+                    <section class="feedback-section">
+                        <h2 class="section-title">AI Feedback</h2>
+                        <pre id="feedback"></pre>
+                    </section>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            Status: Ready
+            <button id="goToMyPageBtn">MyPage</button>
+            <button id="logoutBtn">Logout</button>
+        </footer>
+    </div>
+    <!-- CodeMirror Core -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+
+    <!-- CodeMirror Modes (순서 중요) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="main.js"></script>
+    <!-- ✨ 커스텀 로그아웃 모달창 -->
+    <div id="logoutModal" class="modal hidden">
+        <div class="modal-content">
+            <p>정말 로그아웃하시겠습니까?</p>
+            <div class="modal-buttons">
+                <button id="confirmLogoutBtn">확인</button>
+                <button id="cancelLogoutBtn">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!--학생용 마이페이지창-->
+    <div id="mypageScreen" style="display:none;">
+        <header class="header">
+            <div class="logo" id="myPageUserName">MyPage</div>
+            <nav class="nav">
+                <!-- 기존 로그아웃 버튼 옆에 추가 -->
+                <button id="showTeacherAssignBtn">교사 추가하기</button>
+                <button id="logoutBtnMypage">Logout</button>
+            </nav>
+        </header>
+
+
+        <main class="main">
+            <div class="mypage-container">
+                <div class="submission-list">
+                    <h2 class="section-title">제출 목록</h2>
+                    <ul id="submissionList">
+                        <!-- 제출 목록이 여기에 동적으로 채워질 예정 -->
+                    </ul>
+                </div>
+                <!-- 마이페이지 안 어딘가 (예: submission-detail 위쪽) -->
+                <div id="teacherAssignBox" class="teacher-assign-box" style="display: none;">
+                    <h3>📘 담당 교사 등록</h3>
+                    <input type="text" id="teacherUsernameInput" placeholder="담당 교사 아이디 입력">
+                    <button id="assignTeacherBtn">등록</button>
+                    <div id="teacherAssignMessage" class="assign-message"></div>
+                    <div id="teacherAssignStatus" class="assign-status">
+                        📘 등록된 교사가 없습니다.
+                        <button id="removeTeacherBtn" style="display: none; background:none;">담당 교사 삭제</button>
+                    </div>
+                </div>
+
+                <div class="submission-detail">
+                    <h2 class="section-title">제출 상세 보기</h2>
+                    <div class="code-tabs">
+                        <button class="code-tab-btn active" data-lang="html">HTML</button>
+                        <button class="code-tab-btn" data-lang="css">CSS</button>
+                        <button class="code-tab-btn" data-lang="js">JS</button>
+                    </div>
+                    <div id="submittedCode"></div> <!-- CodeMirror -->
+                    <div class="output-feedback-wrapper">
+                        <div class="output-section">
+                            <h3>Output 결과</h3>
+                            <iframe id="submittedOutput"></iframe>
+                        </div>
+
+                        <div class="feedback-section">
+                            <h3>Feedback 결과</h3>
+                            <pre id="submittedFeedback"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <button id="backToIDEBtn">IDE로 돌아가기</button>
+        </footer>
+    </div>
+    <div id="dashboardScreen" style="display:none;">
+
+        <header class="header">
+            <div class="logo">교사용 Dashboard</div>
+            <nav class="nav">
+                <button id="logoutBtnDashboard">Logout</button>
+            </nav>
+        </header>
+
+        <main class="dashboard-main">
+            <aside class="dashboard-student-list">
+                <h2>학생 목록
+                    <button id="toggleStudentListBtn">⇆</button>
+                </h2>
+
+                <ul id="studentList"></ul>
+            </aside>
+
+            <aside class="dashboard-submission-list">
+                <h2>제출
+                    <button id="toggleSubmissionListBtn">⇆</button>
+                </h2>
+                <ul id="studentSubmissionList"></ul>
+            </aside>
+
+            <section class="dashboard-submission-detail">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-lang="html">HTML</button>
+                    <button class="tab-btn" data-lang="css">CSS</button>
+                    <button class="tab-btn" data-lang="js">JS</button>
+                </div>
+                <div id="dashboardSubmittedCode"></div>
+                <div class="output-feedback-wrapper">
+                    <div class="output-section">
+                        <h3>Output 결과</h3>
+                        <iframe id="dashboardSubmittedOutput"></iframe>
+                    </div>
+
+                    <div class="feedback-section">
+                        <h3>Feedback 결과</h3>
+                        <pre id="dashboardSubmittedFeedback"></pre>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            교사용 대시보드 화면입니다
+        </footer>
+    </div>
+
+</body>
+
+</html>
