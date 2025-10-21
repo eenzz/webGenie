@@ -24,7 +24,8 @@ module.exports = {
 
     // 같은 변수 중복 선언 금지
     "no-redeclare": "error",
-
+// 👇 이 설정을 추가하면 알 수 없는 룰 무시 가능
+"declaration-block-tralling-semicolon": null,
     // 불필요한 escape 문자 경고 (예: \” 같은 경우)
     // "no-useless-escape": "warn",
 
