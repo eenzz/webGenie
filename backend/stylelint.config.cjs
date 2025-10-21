@@ -16,6 +16,10 @@ module.exports = {
     // 선언 뒤에는 항상 세미콜론이 있어야 함
     "declaration-block-trailing-semicolon": "always",
 
+
+  // 👇 이 설정을 추가하면 알 수 없는 룰 무시 가능
+  "declaration-block-tralling-semicolon": null,
+
     // 중복 속성 선언 방지
     "declaration-block-no-duplicate-properties": true,
 
