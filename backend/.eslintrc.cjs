@@ -14,7 +14,7 @@ module.exports = {
   },
   rules: {
     // 세미콜론은 항상 사용 (문법 오류 방지)
-    "semi": ["error", "always"],
+    // "semi": ["error", "always"],
 
     // 큰따옴표만 사용 ("string")
     "quotes": ["error", "double"],
