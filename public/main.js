@@ -17,7 +17,7 @@ let lastGeneratedFeedback = "";
 const API_BASE =
   location.hostname === 'localhost' || location.hostname === '127.0.0.1'
     ? 'http://localhost:5005'
-    : location.origin;
+    : 'https://webgenie-atnn.onrender.com';
 
 async function apiGet(path) {
   const res = await fetch(`${API_BASE}${path}`, { credentials: 'omit' });
@@ -55,7 +55,7 @@ async function apiPost(path, body) {
 
 async function explainLinterMessages(messages, lang) {
     try {
-        const response = await fetch('${API_BASE}/gpt-feedback', {
+        const response = await fetch(`${API_BASE}/gpt-feedback`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ messages, lang })
@@ -95,7 +95,7 @@ function lintHTML(html) {
 }
 async function lintCSS(css) {
     try {
-        const res = await fetch('${API_BASE}/lint/css', {
+        const res = await fetch(`${API_BASE}/lint/css`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ cssCode: css })
@@ -149,7 +149,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             try {
-                const response = await fetch('${API_BASE}/login', {
+                const response = await fetch(`${API_BASE}/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -357,7 +357,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         
             // 서버에 lint + gpt 피드백 요청
-            const response = await fetch("${API_BASE}/lint-code", {
+            const response = await fetch(`${API_BASE}/lint-code`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ html, css, js, runtimeError })
@@ -905,7 +905,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const teacherId = btn.dataset.id;
                     if (!confirm("이 담당 교사를 삭제하시겠습니까?")) return;
 
-                    const res = await fetch('${API_BASE}/remove-teacher', {
+                    const res = await fetch(`${API_BASE}/remove-teacher`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -922,7 +922,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         async function removeAssignedTeacher() {
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            const res = await fetch('${API_BASE}/remove-teacher', {
+            const res = await fetch(`${API_BASE}/remove-teacher`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ student_id: currentUser.id })
@@ -939,7 +939,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!confirm("담당 교사를 삭제하시겠습니까?")) return;
 
             try {
-                const res = await fetch('${API_BASE}/remove-teacher', {
+                const res = await fetch(`${API_BASE}/remove-teacher`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ student_id: currentUser.id })
@@ -1082,9 +1082,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     // const data = await res.json();
                     document.getElementById('teacherAssignMessage').textContent = data.message;
 
-                    if (res.ok) {
-                        document.getElementById('teacherUsernameInput').value = '';
-                    }
+                    document.getElementById('teacherUsernameInput').value = '';
+                    
 
                 } catch (err) {
                     console.error(err);
@@ -1385,7 +1384,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            const response = await fetch('${API_BASE}/signup', {
+            const response = await fetch(`${API_BASE}/signup`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
