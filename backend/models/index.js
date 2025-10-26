@@ -22,8 +22,10 @@ User.belongsToMany(User, {
   otherKey: 'teacher_id'
 });
 
-TeacherStudent.belongsTo(User, { as: 'Teacher', foreignKey: 'teacher_id' });
-TeacherStudent.belongsTo(User, { as: 'Student', foreignKey: 'student_id' });
+// TeacherStudent.belongsTo(User, { as: 'Teacher', foreignKey: 'teacher_id' });
+// TeacherStudent.belongsTo(User, { as: 'Student', foreignKey: 'student_id' });
+TeacherStudent.belongsTo(User, { as: 'TeacherUser', foreignKey: 'teacher_id' });
+TeacherStudent.belongsTo(User, { as: 'StudentUser', foreignKey: 'student_id' });
 
 /**
  * 일대다 : User(학생) ↔ Submission
@@ -38,5 +40,6 @@ Submission.belongsTo(User, {
   as: 'Student',
   foreignKey: 'student_id'
 });
+
 
 export { sequelize, User, Submission, TeacherStudent };

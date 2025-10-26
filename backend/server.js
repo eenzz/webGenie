@@ -295,13 +295,13 @@ app.get('/submissions/:studentId', async (req, res) => {
             where: { student_id: studentId },
             include: [{
                 model: User,
-                as: 'Teacher',
+                as: 'TeacherUser',
                 attributes: ['id', 'username', 'name']
             }]
         });
         console.log("💬 relations 결과:", relations.map(r => r.toJSON())); // 여기가 핵심
 
-        const teachers = relations.map(rel => rel.Teacher);
+        const teachers = relations.map(rel => rel.TeacherUser);
         if (!teachers.length) {
             return res.status(404).json({ message: '등록된 교사가 없습니다.' });
         }
@@ -322,12 +322,12 @@ app.get('/my-students/:teacherId', async (req, res) => {
             where: { teacher_id: teacherId },
             include: [{
                 model: User,
-                as: 'Student',
+                as: 'StudentUser',
                 attributes: ['id', 'username', 'name']
             }]
         });
 
-        const students = relations.map(rel => rel.Student);
+        const students = relations.map(rel => rel.StudentUser);
 
         res.json({ students });
     } catch (err) {
