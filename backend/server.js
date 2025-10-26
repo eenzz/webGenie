@@ -21,7 +21,7 @@ const app = express();
 
 const SERVER_URL = "https://webgenie-atnn.onrender.com";
 
-// const PORT = process.env.PORT || 5005; // 환경 변수 PORT 사용, 없으면 5005
+const PORT = process.env.PORT || 5005; // 환경 변수 PORT 사용, 없으면 5005
 // app.listen(PORT, () => {
 //     console.log(`Server is running on port ${PORT}`);
 //   });
