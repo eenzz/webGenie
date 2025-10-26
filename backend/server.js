@@ -126,7 +126,7 @@ app.post('/assign-teacher-from-mypage', async (req, res) => {
 
         const exists = await TeacherStudent.findOne({ where: { teacher_id: teacher.id, student_id  } });
         if (exists) {
-            return res.status(409).json({ message: '이미 등록된 교사입니다.' });
+            return res.status(200).json({ message: '이미 등록된 교사입니다.' });
         }
 
         await TeacherStudent.create({ teacher_id: teacher.id, student_id });
