@@ -174,25 +174,64 @@ app.post('/login', async (req, res) => {
 });
 // const { Submission } = require('./models'); // 상단에서 가져오기
 
-app.post('/submit', async (req, res) => {
-    const { student_id, html_code, css_code, js_code, feedback } = req.body;
+// app.post('/submit', async (req, res) => {
+//     const { student_id, html_code, css_code, js_code, feedback } = req.body;
 
-    try {
+//     try {
         
-        await Submission.create({
-            student_id,
-            html_code,
-            css_code,
-            js_code,
-            feedback
-        });
+//         await Submission.create({
+//             student_id,
+//             html_code,
+//             css_code,
+//             js_code,
+//             feedback
+//         });
 
-        return res.status(201).json({ message: '제출 완료!' });
+//         return res.status(201).json({ message: '제출 완료!' });
+//     } catch (err) {
+//         console.error(err);
+//         return res.status(500).json({ message: '제출 실패' });
+//     }
+// });
+
+// 제출물 저장
+app.post('/submit', async (req, res) => {
+    try {
+      let { student_id, html_code, css_code, js_code, feedback } = req.body;
+  
+      // 1) student_id 숫자 변환 & 검증
+      const sid = Number(student_id);
+      if (!Number.isFinite(sid)) {
+        return res.status(400).json({ message: '유효한 student_id가 필요합니다.' });
+      }
+  
+      // 2) 학생 존재 여부 확인 (선택: role이 student인지도 확인)
+      const student = await User.findByPk(sid);
+      if (!student /* || student.role !== 'student' */) {
+        return res.status(400).json({ message: '존재하지 않는 student_id 입니다.' });
+      }
+  
+      // 3) 빈 값 기본 처리(선택)
+      html_code = html_code ?? '';
+      css_code  = css_code  ?? '';
+      js_code   = js_code   ?? '';
+      feedback  = feedback  ?? '';
+  
+      // 4) 저장
+      await Submission.create({
+        student_id: sid,
+        html_code,
+        css_code,
+        js_code,
+        feedback
+      });
+  
+      return res.status(201).json({ message: '제출 완료!' });
     } catch (err) {
-        console.error(err);
-        return res.status(500).json({ message: '제출 실패' });
+      console.error('[POST /submit] 저장 실패:', err);
+      return res.status(500).json({ message: '제출 실패' });
     }
-});
+  });
 
 // const { TeacherStudent } = require('./models');
 
@@ -441,9 +480,10 @@ async function generateGptFeedback(messages, lang) {
   
     try {
       const htmlMessages = HTMLHint.verify(html || "");
-      const htmlFeedback = htmlMessages.map(m => `🔸 HTML: ${m.message} (line ${m.line})`).join("\n");
+      const htmlFeedbackArr = htmlMessages.map(m => `🔸 HTML: ${m.message} (line ${m.line})`);
+    //   const htmlFeedback = htmlMessages.map(m => `🔸 HTML: ${m.message} (line ${m.line})`).join("\n");
   
-// --- CSS ---
+    // --- CSS ---
     let cssFeedbackArr = [];
     if (css && css.trim()) {
     const cssResult = await stylelint.lint({
@@ -452,11 +492,11 @@ async function generateGptFeedback(messages, lang) {
     });
     const rawWarnings = cssResult.results?.[0]?.warnings || [];
 
-  // ⚠️ stylelint 설정 문제(Unknown rule 등)는 학습자 에러에서 제외
-  const cssWarnings = rawWarnings.filter(w => !/Unknown rule/i.test(w.text));
+    // ⚠️ stylelint 설정 문제(Unknown rule 등)는 학습자 에러에서 제외
+    const cssWarnings = rawWarnings.filter(w => !/Unknown rule/i.test(w.text));
 
-  cssFeedbackArr = cssWarnings.map(w => `🔸 CSS: ${w.text} (line ${w.line})`);
-}
+    cssFeedbackArr = cssWarnings.map(w => `🔸 CSS: ${w.text} (line ${w.line})`);
+    }
 
     //   const cssResult = await stylelint.lint({
     //     code: css || "",
@@ -479,13 +519,13 @@ async function generateGptFeedback(messages, lang) {
     const runtimeArr = runtimeError ? [`🔸 RUNTIME: ${runtimeError}`] : [];
     
     const feedbackParts = [
-        ...htmlFeedback,
+        ...htmlFeedbackArr,
         ...cssFeedbackArr,
         ...jsFeedbackArr,
         ...runtimeArr
       ];
 
-      const hasError = feedbackParts.length > 0;   // ✅ 설정 오류/빈 CSS는 여기 포함 안 됨
+    const hasError = feedbackParts.length > 0;   // ✅ 설정 오류/빈 CSS는 여기 포함 안 됨
     const allRawFeedback = feedbackParts.join('\n');
 
   
