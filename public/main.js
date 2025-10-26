@@ -13,7 +13,17 @@ let isStudentListCollapsed = false;
 let isSubmissionListCollapsed = false;
 let lastGeneratedFeedback = "";
 
+// 배포: 같은 도메인(origin)으로, 로컬 개발: http://localhost:5005
+const API_BASE =
+  location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+    ? 'http://localhost:5005'
+    : location.origin;
 
+async function apiGet(path) {
+  const res = await fetch(`${API_BASE}${path}`, { credentials: 'omit' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
 async function explainLinterMessages(messages, lang) {
     try {
         const response = await fetch('/gpt-feedback', {
@@ -675,7 +685,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const htmlCode = editors.html.getValue();
             const cssCode = editors.css.getValue();
             const jsCode = editors.js.getValue();
-            const res = await fetch("submit", {
+            const res = await fetch(`${API_BASE}/submit`, {
+            // const res = await fetch("submit", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -754,8 +765,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         async function loadMyPageSubmissions() {
             const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-            const res = await fetch(`http://localhost:5005/submissions/${currentUser.id}`);
-            const data = await res.json();
+            const data=await apiGet(`/submissions/${currentUser.id}`);
+
+            // const res=await apiGet(`/submissions/${studentId}`);
+            // const res = await fetch(`http://localhost:5005/submissions/${currentUser.id}`);
+            // const data = await res.json();
 
             const list = document.getElementById("submissionList");
             list.innerHTML = "";
@@ -833,13 +847,16 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         async function loadAssignedTeacher() {
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            const res = await fetch(`http://localhost:5005/my-teacher/${currentUser.id}`);
-            const data = await res.json();
+            const data=await apiGet(`/my-teacher/${currentUser.id}`);
+            // const res=await apiGet(`/my-teacher/${currentUser.id}`);
+            // const res = await fetch(`http://localhost:5005/my-teacher/${currentUser.id}`);
+            // const data = await res.json();
 
             const teacherBox = document.getElementById("teacherAssignStatus");
             teacherBox.innerHTML = ""; // 초기화
 
-            if (res.ok && data.teachers && data.teachers.length > 0) {
+            if (data && data.teachers && data.teachers.length > 0){
+            // if (res.ok && data.teachers && data.teachers.length > 0) {
                 data.teachers.forEach(teacher => {
                     const div = document.createElement('div');
                     div.innerHTML = `
@@ -1146,8 +1163,10 @@ document.addEventListener("DOMContentLoaded", () => {
         async function loadDashboardStudents() {
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             console.log("현재 사용자:", currentUser);
-            const res = await fetch(`http://localhost:5005/my-students/${currentUser.id}`);
-            const data = await res.json();
+            const data=await apiGet(`/my-students/${currentUser.id}`);
+            // const res=await apiGet(`/my-students/${currentUser.id}`);
+            // const res = await fetch(`http://localhost:5005/my-students/${currentUser.id}`);
+            // const data = await res.json();
 
             const studentList = document.getElementById('studentList');
             studentList.innerHTML = '';
@@ -1161,9 +1180,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 studentList.appendChild(li);
             });
         }
-                async function loadStudentSubmissions(studentId) {
-            const res = await fetch(`http://localhost:5005/submissions/${studentId}`);
-            const data = await res.json();
+            async function loadStudentSubmissions(studentId) {
+                const data=await apiGet(`/submissions/${studentId}`);
+                    // const res=await apiGet(`/submissions/${studentId}`);
+            // const res = await fetch(`http://localhost:5005/submissions/${studentId}`);
+            // const data = await res.json();
 
             const list = document.getElementById("studentSubmissionList");
             list.innerHTML = "";
