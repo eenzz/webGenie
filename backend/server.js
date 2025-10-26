@@ -303,7 +303,8 @@ app.get('/submissions/:studentId', async (req, res) => {
 
         const teachers = relations.map(rel => rel.TeacherUser);
         if (!teachers.length) {
-            return res.status(404).json({ message: '등록된 교사가 없습니다.' });
+            return res.json({ teachers });
+            // return res.status(404).json({ message: '등록된 교사가 없습니다.' });
         }
 
         res.json({ teachers }); // ✅ 배열로 응답

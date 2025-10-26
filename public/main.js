@@ -698,7 +698,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("goToMyPageBtn").addEventListener('click', () => {
             document.getElementById("mainScreen").style.display = "none";
             document.getElementById("mypageScreen").style.display = "flex";
-            loadAssignedTeacher();
+            // loadAssignedTeacher();
         });
 
         // MyPage → IDE 돌아가기 버튼
