@@ -21,12 +21,13 @@ const API_BASE =
 
 async function apiGet(path) {
   const res = await fetch(`${API_BASE}${path}`, { credentials: 'omit' });
+  if (res.status === 404) return null;          
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 async function explainLinterMessages(messages, lang) {
     try {
-        const response = await fetch('/gpt-feedback', {
+        const response = await fetch('${API_BASE}/gpt-feedback', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ messages, lang })
@@ -66,7 +67,7 @@ function lintHTML(html) {
 }
 async function lintCSS(css) {
     try {
-        const res = await fetch('/lint/css', {
+        const res = await fetch('${API_BASE}/lint/css', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ cssCode: css })
@@ -120,7 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             try {
-                const response = await fetch('/login', {
+                const response = await fetch('${API_BASE}/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -328,7 +329,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         
             // 서버에 lint + gpt 피드백 요청
-            const response = await fetch("/lint-code", {
+            const response = await fetch("${API_BASE}/lint-code", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ html, css, js, runtimeError })
@@ -876,7 +877,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const teacherId = btn.dataset.id;
                     if (!confirm("이 담당 교사를 삭제하시겠습니까?")) return;
 
-                    const res = await fetch('/remove-teacher', {
+                    const res = await fetch('${API_BASE}/remove-teacher', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -893,7 +894,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         async function removeAssignedTeacher() {
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            const res = await fetch('/remove-teacher', {
+            const res = await fetch('${API_BASE}/remove-teacher', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ student_id: currentUser.id })
@@ -910,7 +911,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!confirm("담당 교사를 삭제하시겠습니까?")) return;
 
             try {
-                const res = await fetch('/remove-teacher', {
+                const res = await fetch('${API_BASE}/remove-teacher', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ student_id: currentUser.id })
@@ -1036,7 +1037,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 try {
-                    const res = await fetch('/assign-teacher-from-mypage', {
+                    const res = await fetch('${API_BASE}/assign-teacher-from-mypage', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -1351,7 +1352,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            const response = await fetch('/signup', {
+            const response = await fetch('${API_BASE}/signup', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
