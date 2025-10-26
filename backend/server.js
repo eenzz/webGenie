@@ -18,38 +18,53 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config();
 const app = express();
-// const PORT = 5005; // 포트 5005로 고정!
 
 const SERVER_URL = "https://webgenie-atnn.onrender.com";
 
-const PORT = process.env.PORT || 5005; // 환경 변수 PORT 사용, 없으면 5005
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-  });
+// const PORT = process.env.PORT || 5005; // 환경 변수 PORT 사용, 없으면 5005
+// app.listen(PORT, () => {
+//     console.log(`Server is running on port ${PORT}`);
+//   });
 
+const allowedOrigins = [
+    'https://webgenie-atnn.onrender.com',
+    'http://localhost:3000',
+    'http://localhost:5173',
+  ];
 
-// 미들웨어 설정
-app.use(cors());
-app.use(bodyParser.json());
-// app.use(express.static("public"));
-app.use(cors({
-    origin: "https://webgenie-atnn.onrender.com/", 
-    methods: ["GET", "POST"],
+  app.use(cors({
+    origin(origin, cb) {
+        if (!origin) return cb(null, true);
+        if (allowedOrigins.includes(origin)) return cb(null, true);
+        return cb(new Error('Not allowed by CORS'));
+      },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   }));
+  app.use(bodyParser.json());
+  
+
+// // 미들웨어 설정
+// app.use(cors());
+// app.use(bodyParser.json());
+// // app.use(express.static("public"));
+// app.use(cors({
+//     origin: "https://webgenie-atnn.onrender.com/", 
+//     methods: ["GET", "POST"],
+//   }));
 
 // 정적 파일 제공
 app.use(express.static(path.join(__dirname, "..", "public")));
 
 
 // DB 연결 및 테이블 생성
-sequelize.sync({ alter: true }).then(() => {
-    console.log('📦 DB 동기화 완료!');
-    app.listen(PORT, () => {
-        console.log(`✅ 서버 실행 중: http://localhost:${PORT}`);
-    });
-}).catch(err => {
-    console.error('❌ DB 연결 실패:', err);
-});
+// sequelize.sync({ alter: true }).then(() => {
+//     console.log('📦 DB 동기화 완료!');
+//     app.listen(PORT, () => {
+//         console.log(`✅ 서버 실행 중: http://localhost:${PORT}`);
+//     });
+// }).catch(err => {
+//     console.error('❌ DB 연결 실패:', err);
+// });
 
 // 기본 라우트
 // app.get('/', (req, res) => {
@@ -197,10 +212,17 @@ app.get('/submissions', async (req, res) => {
             return res.status(403).json({ message: '이 학생에 대한 접근 권한이 없습니다.' });
         }
 
-        const submissions = await Submission.findAll({
-            where: { user_id: student_id },
-            order: [['submitted_at', 'DESC']]
-        });
+        // const submissions = await Submission.findAll({
+        //     where: { user_id: student_id },
+        //     order: [['submitted_at', 'DESC']]
+        // });
+
+    // ★ 버그 수정: user_id → student_id
+    const submissions = await Submission.findAll({
+        where: { student_id },
+        order: [['submitted_at', 'DESC']]
+      });
+  
 
         return res.status(200).json({ submissions });
     } catch (err) {
@@ -347,119 +369,234 @@ app.post('/lint/css', async (req, res) => {
     }
 });
 
-app.post('/lint-code', async (req, res) => {
-    const { html, css, js, runtimeError } = req.body;
-
+// ★ 서버 내부에서 바로 OpenAI 호출하는 함수
+async function generateGptFeedback(messages, lang) {
+    const apiKey = process.env.OPENAI_API_KEY;
+  
+    const systemPrompt = `
+  당신은 웹프로그래밍을 처음 배우는 학생들을 위한 친절한 교육 도우미입니다.
+  조건:
+  - 전문 용어보다는 초보자가 이해할 수 있는 쉬운 말로 설명해주세요
+  - 격려하는 톤으로 작성해주세요
+  - 질문하지 말고 바로 설명해주세요
+  - "더 궁금한 점이 있으면 물어보세요" 같은 말은 하지 마세요(학습자는 다시 이어서 질문을 할 수 없습니다.)
+  - 글자수는 200자 이내로 작성해주세요
+  
+  이제부터 오류 설명은 한국어로, 초보자도 쉽게 이해할 수 있도록 아래 형식으로 작성해주세요
+  설명 형식:
+  1. 언어: ${lang}
+  2. 해당 코드: 제출된 코드에서 문제가 된 코드 일부를 그대로 보여주기(예시 말 그대로 출력하기)
+  3. 오류 원인-발생위치-해결방법: 왜 이 오류가 발생했는지 쉽게 설명, 구체적인 수정 방법을 제시
+  4. 관련 개념: 관련된 프로그래밍 개념을 간단히 설명
+  5. 예시: (필요한 경우) 올바른 코드 예시 제공
+  6. 원본 메시지: (린터가 준 영어 오류 메시지)
+  `.trim();
+  
     try {
-        const htmlMessages = HTMLHint.verify(html || "");
-        const htmlFeedback = htmlMessages.map(m => `🔸 HTML: ${m.message} (line ${m.line})`).join("\n");
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: messages }
+          ],
+          temperature: 0.7,
+          max_tokens: 1500
+        })
+      });
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content || "❗ GPT 응답 없음";
+    } catch (err) {
+      console.error("GPT 요청 실패:", err);
+      return "❗ GPT 요청 실패";
+    }
+  }
+  
+  app.post('/lint-code', async (req, res) => {
+    const { html, css, js, runtimeError } = req.body;
+  
+    try {
+      const htmlMessages = HTMLHint.verify(html || "");
+      const htmlFeedback = htmlMessages.map(m => `🔸 HTML: ${m.message} (line ${m.line})`).join("\n");
+  
+      const cssResult = await stylelint.lint({
+        code: css || "",
+        configFile: path.resolve(__dirname, 'stylelint.config.cjs'),
+      });
+      const cssFeedback = cssResult.results[0].warnings.map(w => `🔸 CSS: ${w.text} (line ${w.line})`).join("\n");
+  
+      const eslint = new ESLint({
+        overrideConfigFile: path.resolve(__dirname, '.eslintrc.cjs'),
+        cwd: __dirname
+      });
+      const jsResult = await eslint.lintText(js || "");
+      const jsFeedback = jsResult[0].messages.map(m => `🔸 JS: ${m.message} (line ${m.line})`).join("\n");
+  
+      const allRawFeedback = [htmlFeedback, cssFeedback, jsFeedback, runtimeError].filter(Boolean).join("\n");
+      const hasError = htmlMessages.length > 0 || cssResult.errored || jsResult[0].messages.length > 0;
+  
+      let gptFeedback = "";
+      if (hasError) {
+        // ★ 자기 자신 URL로 요청하지 말고 내부 함수 호출
+        gptFeedback = await generateGptFeedback(allRawFeedback, 'HTML/CSS/JS');
+      }
+  
+      return res.json({
+        success: !hasError,
+        feedback: gptFeedback || allRawFeedback || "✅ 문제 없음!"
+      });
+    } catch (err) {
+      console.error("Linting error:", err);
+      return res.status(500).json({ success: false, feedback: "서버 오류: 검사 실패" });
+    }
+  });
+  
+  // (클라이언트에서 직접 쓸 수도 있으니 라우트는 유지)
+  app.post('/gpt-feedback', async (req, res) => {
+    const { messages, lang } = req.body;
+    const feedback = await generateGptFeedback(messages, lang);
+    res.json({ feedback });
+  });
+  
+  // ---------------------------
+  //  DB 연결 후 서버 시작(한 번만)
+  // ---------------------------
+  (async () => {
+    try {
+      await sequelize.authenticate();
+      console.log('Database connected');
+      await sequelize.sync(); // 운영은 migration 권장
+  
+      app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+      });
+    } catch (err) {
+      console.error('DB 초기화 실패:', err);
+      process.exit(1);
+    }
+  })();
 
-        const cssResult = await stylelint.lint({
-            code: css || "",
-            configFile: path.resolve(__dirname, 'stylelint.config.cjs'),
-        });
-        const cssFeedback = cssResult.results[0].warnings.map(w => `🔸 CSS: ${w.text} (line ${w.line})`).join("\n");
 
-        const eslint = new ESLint({
-            overrideConfigFile: path.resolve(__dirname, '.eslintrc.cjs'),
-            cwd: __dirname
-        });
-        const jsResult = await eslint.lintText(js || "");
-        const jsFeedback = jsResult[0].messages.map(m => `🔸 JS: ${m.message} (line ${m.line})`).join("\n");
-        const allRawFeedback = [htmlFeedback, cssFeedback, jsFeedback, runtimeError].filter(Boolean).join("\n");
-        // const allRawFeedback = [htmlFeedback, cssFeedback, jsFeedback].filter(Boolean).join("\n");
-        const hasError = htmlMessages.length > 0 || cssResult.errored || jsResult[0].messages.length > 0;
+
+
+// app.post('/lint-code', async (req, res) => {
+//     const { html, css, js, runtimeError } = req.body;
+
+//     try {
+//         const htmlMessages = HTMLHint.verify(html || "");
+//         const htmlFeedback = htmlMessages.map(m => `🔸 HTML: ${m.message} (line ${m.line})`).join("\n");
+
+//         const cssResult = await stylelint.lint({
+//             code: css || "",
+//             configFile: path.resolve(__dirname, 'stylelint.config.cjs'),
+//         });
+//         const cssFeedback = cssResult.results[0].warnings.map(w => `🔸 CSS: ${w.text} (line ${w.line})`).join("\n");
+
+//         const eslint = new ESLint({
+//             overrideConfigFile: path.resolve(__dirname, '.eslintrc.cjs'),
+//             cwd: __dirname
+//         });
+//         const jsResult = await eslint.lintText(js || "");
+//         const jsFeedback = jsResult[0].messages.map(m => `🔸 JS: ${m.message} (line ${m.line})`).join("\n");
+//         const allRawFeedback = [htmlFeedback, cssFeedback, jsFeedback, runtimeError].filter(Boolean).join("\n");
+//         // const allRawFeedback = [htmlFeedback, cssFeedback, jsFeedback].filter(Boolean).join("\n");
+//         const hasError = htmlMessages.length > 0 || cssResult.errored || jsResult[0].messages.length > 0;
         
-        let gptFeedback = "";
-        if (hasError) {
-            try {
+//         let gptFeedback = "";
+//         if (hasError) {
+//             try {
 
-                const response = await fetch(`${SERVER_URL}/gpt-feedback`, {
-                // const response = await fetch("/gpt-feedback", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ messages: allRawFeedback, lang: 'HTML/CSS/JS' })
-                });
+//                 const response = await fetch(`${SERVER_URL}/gpt-feedback`, {
+//                 // const response = await fetch("/gpt-feedback", {
+//                     method: "POST",
+//                     headers: { "Content-Type": "application/json" },
+//                     body: JSON.stringify({ messages: allRawFeedback, lang: 'HTML/CSS/JS' })
+//                 });
 
-                const gptData = await response.json();
-                gptFeedback = gptData.feedback || "❗ GPT 응답 없음";
-            } catch (err) {
-                console.error("❌ GPT 요청 오류:", err);
-                gptFeedback = "❗ GPT 피드백 요청 실패";
-            }
-        }
+//                 const gptData = await response.json();
+//                 gptFeedback = gptData.feedback || "❗ GPT 응답 없음";
+//             } catch (err) {
+//                 console.error("❌ GPT 요청 오류:", err);
+//                 gptFeedback = "❗ GPT 피드백 요청 실패";
+//             }
+//         }
   
 
-        return res.json({
-            success: !hasError,
-            feedback: gptFeedback || allRawFeedback || "✅ 문제 없음!"
-        });
-    } catch (err) {
-        console.error("Linting error:", err);
-        return res.status(500).json({ success: false, feedback: "서버 오류: 검사 실패" });
-    }
-});
+//         return res.json({
+//             success: !hasError,
+//             feedback: gptFeedback || allRawFeedback || "✅ 문제 없음!"
+//         });
+//     } catch (err) {
+//         console.error("Linting error:", err);
+//         return res.status(500).json({ success: false, feedback: "서버 오류: 검사 실패" });
+//     }
+// });
 
-app.post('/gpt-feedback', async (req, res) => {
-    const { messages, lang } = req.body;
-    const apiKey = process.env.OPENAI_API_KEY; // 환경 변수로 안전하게 관리
+// app.post('/gpt-feedback', async (req, res) => {
+//     const { messages, lang } = req.body;
+//     const apiKey = process.env.OPENAI_API_KEY; // 환경 변수로 안전하게 관리
 
-    // 언어에 따라 코드 파일명 지정
-    const fileName = lang === 'JavaScript' ? 'main.js'
-                   : lang === 'HTML' ? 'index.html'
-                   : lang === 'CSS' ? 'style.css'
-                   : '코드';
+//     // 언어에 따라 코드 파일명 지정
+//     const fileName = lang === 'JavaScript' ? 'main.js'
+//                    : lang === 'HTML' ? 'index.html'
+//                    : lang === 'CSS' ? 'style.css'
+//                    : '코드';
 
-    // 시스템 메시지: AI 역할과 설명 형식 정의
-    const systemPrompt = `
-당신은 웹프로그래밍을 처음 배우는 학생들을 위한 친절한 교육 도우미입니다.
+//     // 시스템 메시지: AI 역할과 설명 형식 정의
+//     const systemPrompt = `
+// 당신은 웹프로그래밍을 처음 배우는 학생들을 위한 친절한 교육 도우미입니다.
 
-조건:
-- 전문 용어보다는 초보자가 이해할 수 있는 쉬운 말로 설명해주세요
-- 격려하는 톤으로 작성해주세요
-- 질문하지 말고 바로 설명해주세요
-- "더 궁금한 점이 있으면 물어보세요" 같은 말은 하지 마세요(학습자는 다시 이어서 질문을 할 수 없습니다.)
-- 글자수는 200자 이내로 작성해주세요
-
-
-이제부터 오류 설명은 한국어로, 초보자도 쉽게 이해할 수 있도록 아래 형식으로 작성해주세요
-설명 형식:
-
-1. 언어: ${lang}
-2. 해당 코드: 제출된 코드에서 문제가 된 코드 일부를 그대로 보여주기(예시 말 그대로 출력하기)
-
-3. 오류 원인-발생위치-해결방법: 왜 이 오류가 발생했는지 쉽게 설명, 구체적인 수정 방법을 제시
-4. 관련 개념: 관련된 프로그래밍 개념을 간단히 설명
-5. 예시: (필요한 경우) 올바른 코드 예시 제공
-
-6. 원본 메시지: (린터가 준 영어 오류 메시지)
+// 조건:
+// - 전문 용어보다는 초보자가 이해할 수 있는 쉬운 말로 설명해주세요
+// - 격려하는 톤으로 작성해주세요
+// - 질문하지 말고 바로 설명해주세요
+// - "더 궁금한 점이 있으면 물어보세요" 같은 말은 하지 마세요(학습자는 다시 이어서 질문을 할 수 없습니다.)
+// - 글자수는 200자 이내로 작성해주세요
 
 
-`.trim();
+// 이제부터 오류 설명은 한국어로, 초보자도 쉽게 이해할 수 있도록 아래 형식으로 작성해주세요
+// 설명 형식:
+
+// 1. 언어: ${lang}
+// 2. 해당 코드: 제출된 코드에서 문제가 된 코드 일부를 그대로 보여주기(예시 말 그대로 출력하기)
+
+// 3. 오류 원인-발생위치-해결방법: 왜 이 오류가 발생했는지 쉽게 설명, 구체적인 수정 방법을 제시
+// 4. 관련 개념: 관련된 프로그래밍 개념을 간단히 설명
+// 5. 예시: (필요한 경우) 올바른 코드 예시 제공
+
+// 6. 원본 메시지: (린터가 준 영어 오류 메시지)
 
 
-    try {
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-                model: "gpt-3.5-turbo",
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: messages }
-                ],
-                temperature: 0.7,
-                max_tokens: 1500
-            })
-        });
+// `.trim();
 
-        const data = await response.json();
-        res.json({ feedback: data.choices?.[0]?.message?.content || "❗ GPT 응답 없음" });
-    } catch (err) {
-        console.error("GPT 요청 실패:", err);
-        res.status(500).json({ feedback: "❗ GPT 요청 실패" });
-    }
-});
+
+//     try {
+//         const response = await fetch("https://api.openai.com/v1/chat/completions", {
+//             method: "POST",
+//             headers: {
+//                 "Content-Type": "application/json",
+//                 "Authorization": `Bearer ${apiKey}`
+//             },
+//             body: JSON.stringify({
+//                 model: "gpt-3.5-turbo",
+//                 messages: [
+//                     { role: "system", content: systemPrompt },
+//                     { role: "user", content: messages }
+//                 ],
+//                 temperature: 0.7,
+//                 max_tokens: 1500
+//             })
+//         });
+
+//         const data = await response.json();
+//         res.json({ feedback: data.choices?.[0]?.message?.content || "❗ GPT 응답 없음" });
+//     } catch (err) {
+//         console.error("GPT 요청 실패:", err);
+//         res.status(500).json({ feedback: "❗ GPT 요청 실패" });
+//     }
+// });

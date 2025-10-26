@@ -1,13 +1,13 @@
-import sequelize from '../config/database.js';  // default export니까 이렇게
-// // const sequelize = require('../config/database');
-// const User = require('./User');
-// const Submission = require('./Submission');
-// const TeacherStudent = require('./TeacherStudent');
+// models/index.js
+import sequelize from '../config/database.js';
 
 import User from './User.js';
 import Submission from './Submission.js';
 import TeacherStudent from './TeacherStudent.js';
 
+/**
+ * 다대다(자기참조) : User ↔ User (TeacherStudent 조인테이블)
+ */
 User.belongsToMany(User, {
   as: 'Students',
   through: TeacherStudent,
@@ -21,17 +21,22 @@ User.belongsToMany(User, {
   foreignKey: 'student_id',
   otherKey: 'teacher_id'
 });
-TeacherStudent.belongsTo(User, { as: 'Teacher', foreignKey: 'teacher_id' })
-TeacherStudent.belongsTo(User, { as: 'Student', foreignKey: 'student_id' })
 
+TeacherStudent.belongsTo(User, { as: 'Teacher', foreignKey: 'teacher_id' });
+TeacherStudent.belongsTo(User, { as: 'Student', foreignKey: 'student_id' });
 
-
-// index.js
-// export { sequelize } from '../config/database.js';
-// export { User } from './User.js';
-// export { Submission } from './Submission.js';
-// export { TeacherStudent } from './TeacherStudent.js';
-// // **ESM 방식으로 내보내기**
+/**
+ * 일대다 : User(학생) ↔ Submission
+ *  - submissions 조회 시 조인 편해지고, onDelete: CASCADE로 학생 삭제 시 제출물도 정리
+ */
+User.hasMany(Submission, {
+  as: 'Submissions',
+  foreignKey: 'student_id',
+  onDelete: 'CASCADE'
+});
+Submission.belongsTo(User, {
+  as: 'Student',
+  foreignKey: 'student_id'
+});
 
 export { sequelize, User, Submission, TeacherStudent };
-// module.exports = { sequelize, User, Submission, TeacherStudent };
