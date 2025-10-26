@@ -21,10 +21,38 @@ const API_BASE =
 
 async function apiGet(path) {
   const res = await fetch(`${API_BASE}${path}`, { credentials: 'omit' });
-  if (res.status === 404) return null;          
+  if (res.status === 404) return null;    
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); }
+  catch {
+    console.error('❗Non-JSON GET 응답:', res.status, text.slice(0,200));
+    throw new Error(`GET ${path} returned non-JSON (status ${res.status})`);
+  }
+  
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  return data;
+//   return res.json();
 }
+
+async function apiPost(path, body) {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+  
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch {
+      console.error('❗Non-JSON POST 응답:', res.status, text.slice(0,200));
+      throw new Error(`POST ${path} returned non-JSON (status ${res.status}). API_BASE가 백엔드인지 확인하세요.`);
+    }
+    if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+    return data;
+  }
+
 async function explainLinterMessages(messages, lang) {
     try {
         const response = await fetch('${API_BASE}/gpt-feedback', {
@@ -1037,16 +1065,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 try {
-                    const res = await fetch('${API_BASE}/assign-teacher-from-mypage', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            student_id: studentId,
-                            teacher_username: teacherUsername
-                        })
+                    const data=await apiPost('/assign-teacher-from-mypage',{
+                        student_id: studentId,
+                        teacher_username: teacherUsername
                     });
+                    //
+                    // const res = await fetch('${API_BASE}/assign-teacher-from-mypage', {
+                    //     method: 'POST',
+                    //     headers: { 'Content-Type': 'application/json' },
+                    //     body: JSON.stringify({
+                    //         student_id: studentId,
+                    //         teacher_username: teacherUsername
+                    //     })
+                    // });
 
-                    const data = await res.json();
+                    // const data = await res.json();
                     document.getElementById('teacherAssignMessage').textContent = data.message;
 
                     if (res.ok) {
