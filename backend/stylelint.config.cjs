@@ -4,7 +4,10 @@ module.exports = {
     "stylelint-config-standard-scss"
   ],
   rules: {
-    // 빈 소스 허용 (초기 템플릿 작업 시 유용)
+        // 최신 stylelint에서는 이 규칙이 없음 → 제거하거나 null 처리
+        // "declaration-block-trailing-semicolon": null,
+
+         // 빈 소스 허용 (초기 템플릿 작업 시 유용)
     "no-empty-source": null,
 
     // 중괄호 안에 아무 내용이 없어선 안 됨 (빈 블록 방지)

@@ -342,14 +342,33 @@ function lintHTML(code) {
 
 // lintCSS 함수
 async function lintCSS(code) {
-    const result = await stylelint.lint({
-        code,
-        configFile: path.resolve(__dirname, 'stylelint.config.cjs'),
-    });
 
-    return result.errored
-        ? result.results[0].warnings.map(w => `🔸 CSS: ${w.text} (line ${w.line})`).join("\n")
-        : "✅ CSS 문제 없음!";
+    const css = (code || "").trim();
+    if (!css) return ""; // ✅ 빈 CSS면 피드백 없음
+  
+    const result = await stylelint.lint({
+      code: css,
+      configFile: path.resolve(__dirname, 'stylelint.config.cjs'),
+      allowEmptyInput: true, // ✅ 빈 입력 허용 (안전망)
+    });
+  
+    // “Unknown rule …” 류 경고는 화면에 안 보이게 필터링
+    const warnings = (result.results?.[0]?.warnings || []).filter(
+      (w) => !/Unknown rule/i.test(w.text)
+    );
+  
+    return warnings.length
+      ? warnings.map(w => `🔸 CSS: ${w.text} (line ${w.line})`).join("\n")
+      : "";
+
+    // const result = await stylelint.lint({
+    //     code,
+    //     configFile: path.resolve(__dirname, 'stylelint.config.cjs'),
+    // });
+
+    // return result.errored
+    //     ? result.results[0].warnings.map(w => `🔸 CSS: ${w.text} (line ${w.line})`).join("\n")
+    //     : "✅ CSS 문제 없음!";
 }
 
 // /lint/css API
@@ -425,13 +444,13 @@ async function generateGptFeedback(messages, lang) {
       const htmlFeedback = htmlMessages.map(m => `🔸 HTML: ${m.message} (line ${m.line})`).join("\n");
   
 // --- CSS ---
-let cssFeedbackArr = [];
-if (css && css.trim()) {
-  const cssResult = await stylelint.lint({
-    code: css,
-    configFile: path.resolve(__dirname, 'stylelint.config.cjs'),
-  });
-  const rawWarnings = cssResult.results?.[0]?.warnings || [];
+    let cssFeedbackArr = [];
+    if (css && css.trim()) {
+    const cssResult = await stylelint.lint({
+        code: css,
+        configFile: path.resolve(__dirname, 'stylelint.config.cjs'),
+    });
+    const rawWarnings = cssResult.results?.[0]?.warnings || [];
 
   // ⚠️ stylelint 설정 문제(Unknown rule 등)는 학습자 에러에서 제외
   const cssWarnings = rawWarnings.filter(w => !/Unknown rule/i.test(w.text));
