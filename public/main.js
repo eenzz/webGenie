@@ -1087,7 +1087,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 } catch (err) {
                     console.error(err);
-                    document.getElementById('teacherAssignMessage').textContent = '서버 오류가 발생했습니다.';
+                    document.getElementById('teacherAssignMessage').textContent = err.message || '요청 실패';
                 }
 
                 loadAssignedTeacher(); // 갱신

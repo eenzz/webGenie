@@ -121,7 +121,7 @@ app.post('/assign-teacher-from-mypage', async (req, res) => {
     try {
         const teacher = await User.findOne({ where: { username: teacher_username, role: 'teacher' } });
         if (!teacher) {
-            return res.status(404).json({ message: '해당 교사 아이디가 존재하지 않습니다.' });
+            return res.status(200).json({ message: '해당 교사 아이디가 존재하지 않습니다.' });
         }
 
         const exists = await TeacherStudent.findOne({ where: { teacher_id: teacher.id, student_id  } });
