@@ -30,7 +30,7 @@ TeacherStudent.belongsTo(User, { as: 'Student', foreignKey: 'student_id' });
  *  - submissions 조회 시 조인 편해지고, onDelete: CASCADE로 학생 삭제 시 제출물도 정리
  */
 User.hasMany(Submission, {
-  as: 'Submissions',
+  as: 'StudentSubmissions',
   foreignKey: 'student_id',
   onDelete: 'CASCADE'
 });
