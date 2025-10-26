@@ -424,21 +424,54 @@ async function generateGptFeedback(messages, lang) {
       const htmlMessages = HTMLHint.verify(html || "");
       const htmlFeedback = htmlMessages.map(m => `🔸 HTML: ${m.message} (line ${m.line})`).join("\n");
   
-      const cssResult = await stylelint.lint({
-        code: css || "",
-        configFile: path.resolve(__dirname, 'stylelint.config.cjs'),
-      });
-      const cssFeedback = cssResult.results[0].warnings.map(w => `🔸 CSS: ${w.text} (line ${w.line})`).join("\n");
+// --- CSS ---
+let cssFeedbackArr = [];
+if (css && css.trim()) {
+  const cssResult = await stylelint.lint({
+    code: css,
+    configFile: path.resolve(__dirname, 'stylelint.config.cjs'),
+  });
+  const rawWarnings = cssResult.results?.[0]?.warnings || [];
+
+  // ⚠️ stylelint 설정 문제(Unknown rule 등)는 학습자 에러에서 제외
+  const cssWarnings = rawWarnings.filter(w => !/Unknown rule/i.test(w.text));
+
+  cssFeedbackArr = cssWarnings.map(w => `🔸 CSS: ${w.text} (line ${w.line})`);
+}
+
+    //   const cssResult = await stylelint.lint({
+    //     code: css || "",
+    //     configFile: path.resolve(__dirname, 'stylelint.config.cjs'),
+    //   });
+    //   const cssFeedback = cssResult.results[0].warnings.map(w => `🔸 CSS: ${w.text} (line ${w.line})`).join("\n");
   
+    // --- JS ---
+    let jsFeedbackArr = [];
+    if (js && js.trim()) {
       const eslint = new ESLint({
         overrideConfigFile: path.resolve(__dirname, '.eslintrc.cjs'),
         cwd: __dirname
       });
-      const jsResult = await eslint.lintText(js || "");
-      const jsFeedback = jsResult[0].messages.map(m => `🔸 JS: ${m.message} (line ${m.line})`).join("\n");
+      const jsResult = await eslint.lintText(js);
+      jsFeedbackArr = jsResult[0].messages.map(m => `🔸 JS: ${m.message} (line ${m.line})`);
+    }
+
+    // --- 런타임 오류 ---
+    const runtimeArr = runtimeError ? [`🔸 RUNTIME: ${runtimeError}`] : [];
+    
+    const feedbackParts = [
+        ...htmlFeedback,
+        ...cssFeedbackArr,
+        ...jsFeedbackArr,
+        ...runtimeArr
+      ];
+
+      const hasError = feedbackParts.length > 0;   // ✅ 설정 오류/빈 CSS는 여기 포함 안 됨
+    const allRawFeedback = feedbackParts.join('\n');
+
   
-      const allRawFeedback = [htmlFeedback, cssFeedback, jsFeedback, runtimeError].filter(Boolean).join("\n");
-      const hasError = htmlMessages.length > 0 || cssResult.errored || jsResult[0].messages.length > 0;
+    //   const allRawFeedback = [htmlFeedback, cssFeedback, jsFeedback, runtimeError].filter(Boolean).join("\n");
+    //   const hasError = htmlMessages.length > 0 || cssResult.errored || jsResult[0].messages.length > 0;
   
       let gptFeedback = "";
       if (hasError) {
@@ -448,7 +481,7 @@ async function generateGptFeedback(messages, lang) {
   
       return res.json({
         success: !hasError,
-        feedback: gptFeedback || allRawFeedback || "✅ 문제 없음!"
+        feedback: gptFeedback || allRawFeedback || " 문제 없음!"
       });
     } catch (err) {
       console.error("Linting error:", err);
