@@ -479,8 +479,20 @@ async function generateGptFeedback(messages, lang) {
   app.post('/lint-code', async (req, res) => {
     const { html, css, js, runtimeError } = req.body;
   
+    const HTML_RULES = {
+        "tag-pair": true,
+        "tagname-lowercase": true,
+        "attr-lowercase": true,
+        "id-unique": true,
+        "alt-require": true,
+        "title-require": true,
+        "src-not-empty": true
+      };
+      
+
     try {
-      const htmlMessages = HTMLHint.verify(html || "");
+    //   const htmlMessages = HTMLHint.verify(html || "");
+    const htmlMessages = HTMLHint.verify(html || "", HTML_RULES);
       const htmlFeedbackArr = htmlMessages.map(m => `🔸 HTML: ${m.message} (line ${m.line})`);
     //   const htmlFeedback = htmlMessages.map(m => `🔸 HTML: ${m.message} (line ${m.line})`).join("\n");
   
